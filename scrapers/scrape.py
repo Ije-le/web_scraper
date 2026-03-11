@@ -14,9 +14,8 @@ from bs4 import BeautifulSoup
 #     url = 'https://www.mbp.state.md.us/sanctions.aspx'
 # else:
 
-outfile = open("alerts.csv", "w")
-writer = csv.writer(outfile)
-writer.writerow(["year", "url", "name", "type", "date"])
+all_rows = []
+
 
 for year in range(2017,2027):
     if year == 2020:
@@ -34,9 +33,13 @@ for year in range(2017,2027):
     table = soup.find('tbody')
 
     list_of_rows = []
+    # this is one row
     for row in table.find_all('tr'):
+        if not row.find_all('td', recursive=False):
+            continue
         list_of_cells = []
         list_of_cells.append(year) #Add year as first column in csv file
+        # this each cell in the row
         for cell in row.find_all('td'):
             if cell.find('a'):
                 href = cell.find('a')['href']
@@ -44,13 +47,20 @@ for year in range(2017,2027):
                     list_of_cells.append(href)
                 else:
                     list_of_cells.append('https://www.mbp.state.md.us' + href)
-                #list_of_cells.append(cell.find('a')['href'])
+
+                if year < 2026:
+                    list_of_cells.append(cell.find('a').text.strip())
             else:
                 text = ' '.join(cell.text.split())
                 list_of_cells.append(text)
-        list_of_rows.append(list_of_cells)
+        # append when we have all the cells for a row
+        all_rows.append(list_of_cells)
 
-        writer.writerows(list_of_rows)
+
+outfile = open("alerts.csv", "w")
+writer = csv.writer(outfile)
+writer.writerow(["year", "url", "name", "type", "date"])
+writer.writerows(all_rows)
 
 
 
