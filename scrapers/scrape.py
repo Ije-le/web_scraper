@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 
 outfile = open("alerts.csv", "w")
 writer = csv.writer(outfile)
-writer.writerow(["url", "name", "type", "date"])
+writer.writerow(["year", "url", "name", "type", "date"])
 
 for year in range(2017,2027):
     if year == 2020:
