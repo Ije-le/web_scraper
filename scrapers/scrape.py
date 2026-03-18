@@ -1,67 +1,47 @@
 import csv
-import sys
 import datetime
 import requests
 from bs4 import BeautifulSoup
 
-#Get year from command line argument, or use current year if not provided.
-# if len(sys.argv) > 1:
-#     year = sys.argv[1]
-# else:
-#     year = str(datetime.now().year)
-
-# if year == '2026':
-#     url = 'https://www.mbp.state.md.us/sanctions.aspx'
-# else:
-
+base_url = 'https://www.mbp.state.md.us/sanctions.aspx'
 all_rows = []
 
-
-for year in range(2017,2027):
+# Loop through years from 2010 to 2026
+for year in range(2017, 2027):
+    print(f"Scraping {year}...")
     if year == 2020:
         continue
-    if year == 2026:
-        url = 'https://www.mbp.state.md.us/sanctions.aspx'
-    else:
+    if year < datetime.date.today().year:
         url = f'https://www.mbp.state.md.us/sanctions_{year}.aspx'
-    # Make a POST request to the URL with the year as a parameter
-    print(url)
-    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'})
+    else:
+        url = base_url
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     html = response.content
 
     soup = BeautifulSoup(html, features="html.parser")
     table = soup.find('tbody')
 
-    list_of_rows = []
-    # this is one row
     for row in table.find_all('tr'):
+        # Skip wrapper rows that contain <tr> elements but no direct <td> children
         if not row.find_all('td', recursive=False):
             continue
-        list_of_cells = []
-        list_of_cells.append(year) #Add year as first column in csv file
-        # this each cell in the row
+        list_of_cells = [str(year)]
         for cell in row.find_all('td'):
             if cell.find('a'):
                 href = cell.find('a')['href']
                 if href.startswith('http'):
                     list_of_cells.append(href)
                 else:
-                    list_of_cells.append('https://www.mbp.state.md.us' + href)
-
+                    list_of_cells.append("https://www.mbp.state.md.us" + href)
                 if year < 2026:
                     list_of_cells.append(cell.find('a').text.strip())
             else:
                 text = ' '.join(cell.text.split())
                 list_of_cells.append(text)
-        # append when we have all the cells for a row
         all_rows.append(list_of_cells)
 
-
-outfile = open("alerts.csv", "w")
+outfile = open("all_sanctions.csv", "w")
 writer = csv.writer(outfile)
 writer.writerow(["year", "url", "name", "type", "date"])
 writer.writerows(all_rows)
-
-
-
-#I ran it with 2025 (and other years), it had 2025 as the first column but returned the same results as 2026.
+print(f"Scraped {len(all_rows)} total records!")
